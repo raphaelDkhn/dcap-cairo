@@ -1,3 +1,5 @@
+use super::cert::Certificates;
+
 pub mod v4;
 pub mod body;
 
@@ -34,6 +36,11 @@ pub struct QuoteHeader {
     pub user_data: [u8; 20]
 }
 
+pub struct QeAuthData {
+    pub size: u16,
+    pub data: Span<u8>,
+}
+
 pub struct CertData {
     // [2 bytes]
     // Determines type of data required to verify the QE Report Signature in the Quote Signature Data structure. 
@@ -60,4 +67,39 @@ pub struct CertData {
     // 6: QE Report Certification Data
     // 7: PLATFORM_MANIFEST
     pub cert_data: Span<u8>,            
+}
+
+// #[generate_trait]
+// pub impl CertDataImpl of CertDataTrait {
+    
+//     fn get_cert_data(self: CertData) -> CertDataType {
+//         match self.cert_data_type {
+//             1 => CertDataType::Type1(self.cert_data.clone()),
+//             2 => CertDataType::Type2(self.cert_data.clone()),
+//             3 => CertDataType::Type3(self.cert_data.clone()),
+//             4 => CertDataType::Type4(self.cert_data.clone()),
+//             5 => CertDataType::CertChain(Certificates::from_pem(&self.cert_data)),
+//             6 => CertDataType::QeReportCertData(QeReportCertData::from_bytes(&self.cert_data)),
+//             7 => CertDataType::Type7(self.cert_data.clone()),
+//             _ => CertDataType::Unused,
+//         }
+//     }
+// }
+
+pub enum CertDataType {
+    Unused,
+    Type1: Span<u8>,
+    Type2: Span<u8>,
+    Type3: Span<u8>,
+    Type4: Span<u8>,
+    CertChain: Certificates,
+    QeReportCertData: QeReportCertData,
+    Type7: Span<u8>,
+}
+
+pub struct QeReportCertData {
+    pub qe_report: body::EnclaveReport,
+    pub qe_report_signature: [u8; 64],
+    pub qe_auth_data: QeAuthData,
+    pub qe_cert_data: CertData,
 }
