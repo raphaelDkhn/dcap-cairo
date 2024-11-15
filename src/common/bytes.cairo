@@ -37,6 +37,30 @@ pub impl U16BytesImpl of Bytes<u16> {
     }
 }
 
+pub impl U32BytesImpl of Bytes<u32> {
+    fn from_le_bytes(mut bytes: Span<u8>) -> u32 {
+        assert(bytes.len() == 4, 'Invalid byte array length');
+
+        let byte0: u32 = (*bytes.at(0)).into();
+        let byte1: u32 = (*bytes.at(1)).into() * 0x100;
+        let byte2: u32 = (*bytes.at(2)).into() * 0x10000;
+        let byte3: u32 = (*bytes.at(3)).into() * 0x1000000;
+
+        byte0 + byte1 + byte2 + byte3
+    }
+
+    fn to_le_bytes(value: u32) -> Span<u8> {
+        let mut bytes = ArrayTrait::new();
+
+        bytes.append((value % 0x100).try_into().unwrap());
+        bytes.append(((value / 0x100) % 0x100).try_into().unwrap());
+        bytes.append(((value / 0x10000) % 0x100).try_into().unwrap());
+        bytes.append(((value / 0x1000000) % 0x100).try_into().unwrap());
+
+        bytes.span()
+    }
+}
+
 
 pub impl U64BytesImpl of Bytes<u64> {
     fn from_le_bytes(mut bytes: Span<u8>) -> u64 {
@@ -56,7 +80,7 @@ pub impl U64BytesImpl of Bytes<u64> {
 
     fn to_le_bytes(value: u64) -> Span<u8> {
         let mut bytes = ArrayTrait::new();
-        
+
         bytes.append((value % 0x100).try_into().unwrap());
         bytes.append(((value / 0x100) % 0x100).try_into().unwrap());
         bytes.append(((value / 0x10000) % 0x100).try_into().unwrap());

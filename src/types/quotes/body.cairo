@@ -84,44 +84,25 @@ pub impl EnclaveReportImpl of EnclaveReportTrait {
                 (*(raw_bytes.multi_pop_front::<2>().unwrap())).unbox().span()
             ),
             reserved_4: (*(raw_bytes.multi_pop_front::<60>().unwrap())).unbox().span(),
-            report_data: (*(raw_bytes.multi_pop_front::<64>().unwrap())).unbox().span(),
+            report_data: raw_bytes,
         }
     }
 
     fn to_bytes(mut self: EnclaveReport) -> Span<u8> {
         let mut raw_bytes = ArrayTrait::new();
 
-        let mut i: usize = 0;
-        while i < 384 {
-            if i < 16 {
-                raw_bytes.append_span(self.cpu_svn)
-            } else if (i >= 16) && (i < 20) {
-                raw_bytes.append_span(self.misc_select)
-            } else if (i >= 20) && (i < 48) {
-                raw_bytes.append_span(self.reserved_1)
-            } else if (i >= 48) && (i < 64) {
-                raw_bytes.append_span(self.attributes)
-            } else if (i >= 64) && (i < 96) {
-                raw_bytes.append_span(self.mrenclave)
-            } else if (i >= 96) && (i < 128) {
-                raw_bytes.append_span(self.reserved_2)
-            } else if (i >= 128) && (i < 160) {
-                raw_bytes.append_span(self.mrsigner)
-            } else if (i >= 160) && (i < 256) {
-                raw_bytes.append_span(self.reserved_3)
-            } else if (i >= 256) && (i < 258) {
-                raw_bytes.append_span(U16BytesImpl::to_le_bytes(self.isv_prod_id));
-                i += 1;
-            } else if (i >= 258) && (i < 260) {
-                raw_bytes.append_span(U16BytesImpl::to_le_bytes(self.isv_svn));
-                i += 1;
-            } else if (i >= 260) && (i < 320) {
-                raw_bytes.append_span(self.reserved_4)
-            } else if (i >= 320) && (i < 384) {
-                raw_bytes.append_span(self.report_data)
-            }
-            i += 1;
-        };
+        raw_bytes.append_span(self.cpu_svn);
+        raw_bytes.append_span(self.misc_select);
+        raw_bytes.append_span(self.reserved_1);
+        raw_bytes.append_span(self.attributes);
+        raw_bytes.append_span(self.mrenclave);
+        raw_bytes.append_span(self.reserved_2);
+        raw_bytes.append_span(self.mrsigner);
+        raw_bytes.append_span(self.reserved_3);
+        raw_bytes.append_span(U16BytesImpl::to_le_bytes(self.isv_prod_id));
+        raw_bytes.append_span(U16BytesImpl::to_le_bytes(self.isv_svn));
+        raw_bytes.append_span(self.reserved_4);
+        raw_bytes.append_span(self.report_data);
 
         raw_bytes.span()
     }
@@ -247,52 +228,28 @@ pub impl TD10ReportBodyImpl of TD10ReportBodyTrait {
             rtmr1: (*(raw_bytes.multi_pop_front::<48>().unwrap())).unbox().span(),
             rtmr2: (*(raw_bytes.multi_pop_front::<48>().unwrap())).unbox().span(),
             rtmr3: (*(raw_bytes.multi_pop_front::<48>().unwrap())).unbox().span(),
-            report_data: (*(raw_bytes.multi_pop_front::<64>().unwrap())).unbox().span(),
+            report_data: raw_bytes,
         }
     }
 
     fn to_bytes(mut self: TD10ReportBody) -> Span<u8> {
         let mut raw_bytes = ArrayTrait::new();
 
-        let mut i: usize = 0;
-        while i < 384 {
-            if i < 16 {
-                raw_bytes.append_span(self.tee_tcb_svn)
-            } else if (i >= 16) && (i < 64) {
-                raw_bytes.append_span(self.mrseam)
-            } else if (i >= 64) && (i < 112) {
-                raw_bytes.append_span(self.mrsignerseam)
-            } else if (i >= 112) && (i < 120) {
-                raw_bytes.append_span(U64BytesImpl::to_le_bytes(self.seam_attributes));
-                i += 7;
-            } else if (i >= 120) && (i < 128) {
-                raw_bytes.append_span(U64BytesImpl::to_le_bytes(self.td_attributes));
-                i += 7;
-            } else if (i >= 128) && (i < 136) {
-                raw_bytes.append_span(U64BytesImpl::to_le_bytes(self.xfam));
-                i += 7;
-            } else if (i >= 136) && (i < 184) {
-                raw_bytes.append_span(self.mrtd)
-            } else if (i >= 184) && (i < 232) {
-                raw_bytes.append_span(self.mrconfigid)
-            } else if (i >= 232) && (i < 280) {
-                raw_bytes.append_span(self.mrowner)
-            } else if (i >= 280) && (i < 328) {
-                raw_bytes.append_span(self.mrownerconfig)
-            } else if (i >= 328) && (i < 376) {
-                raw_bytes.append_span(self.rtmr0)
-            } else if (i >= 376) && (i < 424) {
-                raw_bytes.append_span(self.rtmr1)
-            } else if (i >= 424) && (i < 472) {
-                raw_bytes.append_span(self.rtmr2)
-            } else if (i >= 472) && (i < 520) {
-                raw_bytes.append_span(self.rtmr3)
-            } else if (i >= 520) && (i < 584) {
-                raw_bytes.append_span(self.report_data)
-            }
-
-            i += 1;
-        };
+        raw_bytes.append_span(self.tee_tcb_svn);
+        raw_bytes.append_span(self.mrseam);
+        raw_bytes.append_span(self.mrsignerseam);
+        raw_bytes.append_span(U64BytesImpl::to_le_bytes(self.seam_attributes));
+        raw_bytes.append_span(U64BytesImpl::to_le_bytes(self.td_attributes));
+        raw_bytes.append_span(U64BytesImpl::to_le_bytes(self.xfam));
+        raw_bytes.append_span(self.mrtd);
+        raw_bytes.append_span(self.mrconfigid);
+        raw_bytes.append_span(self.mrowner);
+        raw_bytes.append_span(self.mrownerconfig);
+        raw_bytes.append_span(self.rtmr0);
+        raw_bytes.append_span(self.rtmr1);
+        raw_bytes.append_span(self.rtmr2);
+        raw_bytes.append_span(self.rtmr3);
+        raw_bytes.append_span(self.report_data);
 
         raw_bytes.span()
     }
