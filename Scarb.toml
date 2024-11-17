@@ -6,6 +6,7 @@ edition = "2024_07"
 # See more keys and their definitions at https://docs.swmansion.com/scarb/docs/reference/manifest.html
 
 [dependencies]
+alexandria_data_structures = {git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "95d98a5"}
 
 [dev-dependencies]
 cairo_test = "2.8.4"
