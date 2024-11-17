@@ -1,0 +1,9 @@
+[package]
+name = "parser"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git", rev = "bd86987" }
+hex = "0.4.3"
+serde = "1.0.215"

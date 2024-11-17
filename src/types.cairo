@@ -91,7 +91,7 @@ pub struct ECDSASignature {
 // TDX Module Fields parsed from TCBInfo
 #[derive(Drop)]  
 pub struct TdxModule {
-    pub mrsigner: [u8; 48], // 48 bytes
+    pub mrsigner: [u8; 48],
     pub attributes: u64,
     pub attributes_mask: u64
 }
