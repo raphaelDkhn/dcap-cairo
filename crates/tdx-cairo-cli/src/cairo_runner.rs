@@ -8,7 +8,7 @@ pub(super) fn cairo_run(args: &[FuncArg], sierra_file: PathBuf) -> Result<String
     let program = load_sierra_file(sierra_file)?;
 
     let config = Cairo1RunConfig {
-        args: args,
+        args,
         serialize_output: true,
         trace_enabled: false,
         relocate_mem: false,
@@ -19,7 +19,9 @@ pub(super) fn cairo_run(args: &[FuncArg], sierra_file: PathBuf) -> Result<String
         dynamic_layout_params: None,
     };
 
-    let (_, _, serialized_output) = cairo_run_program(&program, config)?;
+    let (runner, _, serialized_output) = cairo_run_program(&program, config)?;
+
+    println!("Resources: {:?}", runner.get_execution_resources()?);
 
     Ok(serialized_output.unwrap())
 }

@@ -1,5 +1,5 @@
 [package]
-name = "dcap_cairo"
+name = "tdx_cairo_verifier"
 version = "0.1.0"
 edition = "2024_07"
 
