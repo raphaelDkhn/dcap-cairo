@@ -4,11 +4,11 @@ use cairo1_run::{cairo_run_program, error::Error, Cairo1RunConfig, FuncArg};
 use cairo_lang_sierra::program::{Program, VersionedProgram};
 use cairo_vm::types::layout_name::LayoutName;
 
-pub(super) fn cairo_run(inputs: Vec<FuncArg>, sierra_file: PathBuf) -> Result<bool, Error> {
+pub(super) fn cairo_run(args: &[FuncArg], sierra_file: PathBuf) -> Result<bool, Error> {
     let program = load_sierra_file(sierra_file)?;
 
     let config = Cairo1RunConfig {
-        args: Default::default(),
+        args: args,
         serialize_output: true,
         trace_enabled: false,
         relocate_mem: false,
@@ -19,7 +19,7 @@ pub(super) fn cairo_run(inputs: Vec<FuncArg>, sierra_file: PathBuf) -> Result<bo
         dynamic_layout_params: None,
     };
 
-    let (runner, return_values, serialized_output) = cairo_run_program(&program, config)?;
+    let (_, _, serialized_output) = cairo_run_program(&program, config)?;
 
     println!("Res: {:?}", serialized_output);
 

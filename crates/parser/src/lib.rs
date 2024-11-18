@@ -91,7 +91,6 @@ pub fn prepare_cairo_inputs(quote: &QuoteV4, collaterals: &IntelCollateral) -> S
                             tcb: CairoTdxModuleTcb {
                                 isvsvn: level.tcb.isvsvn,
                             },
-                            tcb_date: level.tcb_date.clone(),
                             tcb_status: match level.tcb_status.as_str() {
                                 "UpToDate" => 0,
                                 "SWHardeningNeeded" => 1,
@@ -264,17 +263,25 @@ fn serialize_inputs(inputs: CairoVerificationInputs) -> String {
             .unwrap()
             .to_string(),
     );
+    let mut tcb_levels: Vec<String> = vec!["[".to_string()];
     tdx_module.tcb_levels.iter().for_each(|e| {
-        serialized.push(e.tcb.isvsvn.to_string());
-        serialized.push(Felt252::from_hex("0x123").unwrap().to_string());
-        serialized.push(e.tcb_status.to_string());
+        tcb_levels.push(e.tcb.isvsvn.to_string());
+        tcb_levels.push(e.tcb_status.to_string());
     });
+    tcb_levels.push("]".to_string());
+    let tcb_levels = tcb_levels.join(" ");
+    serialized.push(tcb_levels);
 
     // Serialize tcb info svn
+    let mut tcb_info_serialized: Vec<String> = vec!["[".to_string()];
     inputs
         .tcb_info_svn
         .iter()
-        .for_each(|e| serialized.push(e.to_string()));
+        .for_each(|e| tcb_info_serialized.push(e.to_string()));
+    tcb_info_serialized.push("]".to_string());
+    let tcb_info_serialized = tcb_info_serialized.join(" ");
+
+    serialized.push(tcb_info_serialized);
 
     serialized.join(" ")
 }

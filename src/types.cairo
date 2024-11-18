@@ -101,9 +101,7 @@ pub struct TdxModule {
 
 #[derive(Drop, Copy)]
 pub struct TdxModuleIdentityTcbLevel {
-    pub id: felt252,
     pub tcb: TdxModuleTcb,
-    pub tcb_date: felt252,
     pub tcb_status: TcbStatus,
 }
 

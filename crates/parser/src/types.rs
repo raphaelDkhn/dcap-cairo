@@ -44,7 +44,6 @@ pub struct CairoTDXModule {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CairoTdxModuleTcbLevel {
     pub tcb: CairoTdxModuleTcb,
-    pub tcb_date: String, // felt252 as hex string
     pub tcb_status: u8,   // Enum value
 }
 
