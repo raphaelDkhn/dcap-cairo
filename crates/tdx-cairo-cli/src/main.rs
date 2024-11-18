@@ -1,5 +1,10 @@
+use std::path::PathBuf;
+
+use cairo_runner::cairo_run;
 use dcap_rs::types::{collaterals::IntelCollateral, quotes::version_4::QuoteV4};
 use parser::prepare_cairo_inputs;
+
+mod cairo_runner;
 
 fn main() {
     let quote = QuoteV4::from_bytes(include_bytes!("../../../data/quote_tdx_00806f050000.dat"));
@@ -20,4 +25,7 @@ fn main() {
 
     println!("Inputs: {:?}", cairo_inputs);
 
+    let sierra_file = PathBuf::from("../../../target/dev/dcap_cairo.sierra.json");
+
+    // cairo_run(, sierra_file);
 }
