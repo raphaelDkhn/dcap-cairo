@@ -13,10 +13,10 @@ pub fn prepare_cairo_inputs(
     collaterals: &IntelCollateral,
     min_isvsvn: u8,
 ) -> CairoVerificationInputs {
-    // 1. Parse the quote using Automata's library
+    // Parse the quote using Automata's library
     let quote = QuoteV4::from_bytes(quote_bytes);
 
-    // 2. Extract quote header
+    // Extract quote header
     let cairo_header = CairoQuoteHeader {
         version: quote.header.version,
         att_key_type: quote.header.att_key_type,
@@ -27,7 +27,7 @@ pub fn prepare_cairo_inputs(
         user_data: quote.header.user_data.to_vec(),
     };
 
-    // 3. Extract TD10 report body
+    // Extract TD10 report body
     let td10_body = if let QuoteBody::TD10QuoteBody(body) = quote.quote_body {
         CairoTD10Report {
             tee_tcb_svn: body.tee_tcb_svn.to_vec(),
@@ -50,7 +50,7 @@ pub fn prepare_cairo_inputs(
         panic!("Not a TD10 quote body");
     };
 
-    // 4. Extract ECDSA signature
+    // Extract ECDSA signature
     let signature = {
         let sig = &quote.signature.quote_signature;
         let (r, s) = sig.split_at(32);
@@ -62,13 +62,13 @@ pub fn prepare_cairo_inputs(
         CairoECDSASignature { r: r_hex, s: s_hex }
     };
 
-    // 5. Get attestation public key
+    // Get attestation public key
     let pubkey = {
         let key = &quote.signature.ecdsa_attestation_key;
         format!("0x{}", hex::encode(key))
     };
 
-    // 6. Extract TDX module info from TCBInfo
+    // Extract TDX module info from TCBInfo
     let tcbinfo_v3 = collaterals.get_tcbinfov3();
     let tdx_module = if let Some(module) = &tcbinfo_v3.tcb_info.tdx_module {
         let mrsigner = hex::decode(&module.mrsigner).unwrap();
@@ -84,7 +84,7 @@ pub fn prepare_cairo_inputs(
         panic!("No TDX module in TCBInfo");
     };
 
-    // 7. Get TCB SVN values for comparison
+    // Get TCB SVN values for comparison
     let tcb_info_svn = if let Some(tcb_level) = tcbinfo_v3.tcb_info.tcb_levels.first() {
         if let Some(tdx_components) = &tcb_level.tcb.tdxtcbcomponents {
             tdx_components.iter().map(|comp| comp.svn as u8).collect()
