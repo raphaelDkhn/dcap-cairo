@@ -107,6 +107,8 @@ pub fn prepare_cairo_inputs(quote: &QuoteV4, collaterals: &IntelCollateral) -> S
             }
         }
 
+        levels.sort_by(|a, b| b.tcb.isvsvn.cmp(&a.tcb.isvsvn));
+
         let mrsigner = hex::decode(&module.mrsigner).unwrap();
         let mut mrsigner_bytes = [0u8; 48];
         mrsigner_bytes.copy_from_slice(&mrsigner);

@@ -102,7 +102,7 @@ pub struct TdxModule {
 #[derive(Drop, Copy)]
 pub struct TdxModuleIdentityTcbLevel {
     pub tcb: TdxModuleTcb,
-    pub tcb_status: TcbStatus,
+    pub tcb_status: u8,
 }
 
 #[derive(Drop, Copy)]
@@ -110,14 +110,11 @@ pub struct TdxModuleTcb {
     pub isvsvn: u8
 }
 
-#[derive(Drop, Copy)]
-pub enum TcbStatus {
-    TCB_STATUS_OK,
-    TCB_STATUS_SW_HARDENING_NEEDED,
-    TCB_STATUS_CONFIG_AND_SW_HARDENING_NEEDED,
-    TCB_STATUS_CONFIG_NEEDED,
-    TCB_STATUS_OUT_OF_DATE,
-    TCB_STATUS_OUT_OF_DATE_CONFIG_NEEDED,
-    TCB_STATUS_REVOKED,
-    TCB_STATUS_UNRECOGNIZED
-}
+const TCB_STATUS_OK: u8 = 0;
+const TCB_STATUS_SW_HARDENING_NEEDED: u8 = 1;
+const TCB_STATUS_CONFIG_NEEDED: u8 = 2;
+const TCB_STATUS_CONFIG_AND_SW_HARDENING_NEEDED: u8 = 3;
+const TCB_STATUS_OUT_OF_DATE: u8 = 4;
+const TCB_STATUS_OUT_OF_DATE_CONFIG_NEEDED: u8 = 5;
+const TCB_STATUS_REVOKED: u8 = 6;
+const TCB_STATUS_UNRECOGNIZED: u8 = 7;
