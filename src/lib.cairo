@@ -21,19 +21,19 @@ fn main(
     tcb_info_svn: Span<u8>,
     min_isvsvn: u8
 ) -> bool {
-    // Step 1: Verify quote signature
+    // Verify quote signature
     if !verify_quote_signature(
         @quote_header, @quote_body, @attestation_signature, attestation_pubkey
     ) {
         return false;
     }
 
-    // Step 2: Verify TDX module identity
+    // Verify TDX module identity
     if !verify_tdx_module(@quote_body, @tdx_module) {
         return false;
     }
 
-    // Step 3: Verify TCB level
+    // Verify TCB level
     verify_tcb_level(quote_body.tee_tcb_svn.span(), tcb_info_svn, min_isvsvn)
 }
 
@@ -67,24 +67,24 @@ fn verify_quote_signature(
     attestation_signature: @ECDSASignature,
     attestation_pubkey: felt252,
 ) -> bool {
-    // 1. Check header fields
+    // Check header fields
     if !check_quote_header(quote_header) {
         return false;
     }
 
-    // 2. Concatenate header and quote body data for signature verification
+    // Concatenate header and quote body data for signature verification
     let mut message = (*quote_header).to_bytes().concat((*quote_body).to_bytes());
 
-    // 3. Hash the message with SHA256
+    // Hash the message with SHA256
     let message_hash = compute_sha256_byte_array(@message.span().into());
 
-    // 4. Convert message hash bytes to felt
+    // Convert message hash bytes to felt
     let mut serialzed: Array<felt252> = ArrayTrait::new();
     message_hash.serialize(ref serialzed);
     assert(serialzed.len() == 1, 'Wrong size');
     let message_hash = *serialzed[0];
 
-    // 5. Check ECDSA signature
+    // Check ECDSA signature
     check_ecdsa_signature(
         message_hash, attestation_pubkey, *attestation_signature.r, *attestation_signature.s
     )
@@ -92,12 +92,12 @@ fn verify_quote_signature(
 
 // Verify TDX module identity matches TCB info
 fn verify_tdx_module(quote_body: @TD10ReportBody, tdx_module: @TdxModule) -> bool {
-    // 1. Check MRSIGNER matches
+    // Check MRSIGNER matches
     if (*quote_body.mrsignerseam).span() != (*tdx_module.mrsigner).span() {
         return false;
     }
 
-    // 2. Check attributes with mask
+    // Check attributes with mask
     if *quote_body.seam_attributes & *tdx_module.attributes_mask != *tdx_module.attributes {
         return false;
     }
