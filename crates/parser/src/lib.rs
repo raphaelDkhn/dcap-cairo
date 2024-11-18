@@ -10,12 +10,9 @@ use types::{
 pub mod types;
 
 pub fn prepare_cairo_inputs(
-    quote_bytes: &[u8],
+    quote: &QuoteV4,
     collaterals: &IntelCollateral,
 ) -> CairoVerificationInputs {
-    // Parse the quote using Automata's library
-    let quote = QuoteV4::from_bytes(quote_bytes);
-
     // Extract quote header
     let cairo_header = CairoQuoteHeader {
         version: quote.header.version,

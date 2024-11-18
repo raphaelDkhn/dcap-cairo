@@ -1,11 +1,10 @@
 [package]
-name = "parser"
+name = "tdx-cairo-cli"
 version.workspace = true
 edition.workspace = true
 repository.workspace = true
 license.workspace = true
 
 [dependencies]
+parser = {path = "../parser"}
 dcap-rs.workspace = true
-hex = "0.4.3"
-serde = "1.0.215"

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/parser"]
+members = ["crates/parser", "crates/tdx-cairo-cli"]
 
 [workspace.package]
 version = "0.0.1"
@@ -8,3 +8,6 @@ edition = "2021"
 repository = ""
 license = "MIT"
 license-file = "LICENSE"
+
+[workspace.dependencies]
+dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git", rev = "bd86987" }

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 // Structures that match Cairo's expected input format
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct CairoQuoteHeader {
     pub version: u16,
     pub att_key_type: u16,
@@ -12,7 +12,7 @@ pub struct CairoQuoteHeader {
     pub user_data: Vec<u8>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct CairoTD10Report {
     pub tee_tcb_svn: Vec<u8>,
     pub mrseam: Vec<u8>,
@@ -31,34 +31,35 @@ pub struct CairoTD10Report {
     pub report_data: Vec<u8>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct CairoTDXModule {
     pub mrsigner: Vec<u8>,
     pub attributes: u64,
     pub attributes_mask: u64,
     pub identity_id: String, // felt252 as hex string
     pub expected_id: String, // felt252 as hex string
-    pub tcb_levels: Vec<CairoTdxModuleTcbLevel>
+    pub tcb_levels: Vec<CairoTdxModuleTcbLevel>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct CairoTdxModuleTcbLevel {
     pub tcb: CairoTdxModuleTcb,
-    pub tcb_date: String,  // felt252 as hex string
-    pub tcb_status: u8     // Enum value
+    pub tcb_date: String, // felt252 as hex string
+    pub tcb_status: u8,   // Enum value
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct CairoTdxModuleTcb {
-    pub isvsvn: u8
+    pub isvsvn: u8,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct CairoECDSASignature {
     pub r: String, // felt252 as hex string
-    pub s: String  // felt252 as hex string
+    pub s: String, // felt252 as hex string
 }
 
+#[derive(Debug)]
 pub struct CairoVerificationInputs {
     pub quote_header: CairoQuoteHeader,
     pub quote_body: CairoTD10Report,
