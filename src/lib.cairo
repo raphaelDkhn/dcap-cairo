@@ -79,10 +79,13 @@ fn verify_quote_signature(
     }
 
     // Concatenate header and quote body data for signature verification
-    let mut message = (*quote_header).to_bytes().concat((*quote_body).to_bytes());
+    let mut _message = (*quote_header).to_bytes().concat((*quote_body).to_bytes());
 
     // Hash the message with SHA256
-    // let message_hash = compute_sha256_byte_array(@message.span().into());
+    // BUG: Compute a SHA-256 in causes inconsistent memory error in CairoVM.
+    // here is the issue on CairoVM repo: https://github.com/lambdaclass/cairo-vm/issues/1874
+    // So I'm commenting this block for the moment.
+    {// let message_hash = compute_sha256_byte_array(@message.span().into());
 
     // // Convert message hash bytes to felt
     // let mut serialzed: Array<felt252> = ArrayTrait::new();
@@ -94,6 +97,7 @@ fn verify_quote_signature(
     // check_ecdsa_signature(
     //     message_hash, attestation_pubkey, *attestation_signature.r, *attestation_signature.s
     // )
+    }
 
     true
 }
