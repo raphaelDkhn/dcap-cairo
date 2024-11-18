@@ -1,5 +1,6 @@
 use crate::types::{
-    QuoteHeader, QuoteHeaderImpl, TdxModule, TD10ReportBody, TD10ReportBodyImpl, ECDSASignature
+    QuoteHeader, QuoteHeaderImpl, TdxModule, TD10ReportBody, TD10ReportBodyImpl, ECDSASignature,
+    TcbStatus
 };
 use crate::constants::{INTEL_QE_VENDOR_ID, ECDSA_256_WITH_P256_CURVE, TDX_TEE_TYPE};
 use alexandria_data_structures::span_ext::SpanTraitExt;
@@ -19,7 +20,6 @@ fn main(
     attestation_pubkey: felt252,
     tdx_module: TdxModule,
     tcb_info_svn: Span<u8>,
-    min_isvsvn: u8
 ) -> bool {
     // Verify quote signature
     if !verify_quote_signature(
@@ -33,8 +33,17 @@ fn main(
         return false;
     }
 
-    // Verify TCB level
-    verify_tcb_level(quote_body.tee_tcb_svn.span(), tcb_info_svn, min_isvsvn)
+    // Get TCB status from TDX module verification
+    let tcb_status = verify_tdx_tcb(quote_body.tee_tcb_svn.span(), @tdx_module);
+
+    // Convert TCB status to bool result
+    match tcb_status {
+        TcbStatus::TCB_STATUS_OK => true,
+        TcbStatus::TCB_STATUS_REVOKED => false,
+        TcbStatus::TCB_STATUS_OUT_OF_DATE => false,
+        TcbStatus::TCB_STATUS_UNRECOGNIZED => false,
+        _ => false
+    }
 }
 
 fn check_quote_header(header: @QuoteHeader) -> bool {
@@ -105,15 +114,30 @@ fn verify_tdx_module(quote_body: @TD10ReportBody, tdx_module: @TdxModule) -> boo
     return true;
 }
 
-// Verify TCB is at acceptable level
-fn verify_tcb_level(mut tee_tcb_svn: Span<u8>, mut tcb_info_svn: Span<u8>, min_isvsvn: u8) -> bool {
-    // Compare SVN values
-    let mut is_valid = true;
+// Verify TCB level
+fn verify_tdx_tcb(tee_tcb_svn: Span<u8>, tdx_module: @TdxModule) -> TcbStatus {
+    // Get ISV SVN and version from TEE TCB SVN
+    let tdx_module_isv_svn = *tee_tcb_svn[0];
+    let tdx_module_version = *tee_tcb_svn[1];
+
+    // Special case for version 0
+    if tdx_module_version == 0 {
+        return TcbStatus::TCB_STATUS_OK;
+    }
+
+    // Verify module ID matches
+    if *tdx_module.identity_id != *tdx_module.expected_id {
+        return TcbStatus::TCB_STATUS_UNRECOGNIZED;
+    }
+
+    // Find highest TCB level where our ISV SVN meets minimum
+    let mut tcb_status = TcbStatus::TCB_STATUS_UNRECOGNIZED;
+    let mut tcb_levels = *tdx_module.tcb_levels;
     loop {
-        match tee_tcb_svn.pop_front() {
-            Option::Some(tee_tcb_svn_ele) => {
-                if tee_tcb_svn_ele < tcb_info_svn.pop_front().unwrap() {
-                    is_valid = false;
+        match tcb_levels.pop_front() {
+            Option::Some(level) => {
+                if tdx_module_isv_svn >= *level.tcb.isvsvn {
+                    tcb_status = *level.tcb_status;
                     break;
                 }
             },
@@ -121,5 +145,5 @@ fn verify_tcb_level(mut tee_tcb_svn: Span<u8>, mut tcb_info_svn: Span<u8>, min_i
         }
     };
 
-    is_valid
+    tcb_status
 }

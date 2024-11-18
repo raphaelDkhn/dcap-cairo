@@ -3,7 +3,8 @@ use dcap_rs::types::{
     quotes::{body::QuoteBody, version_4::QuoteV4},
 };
 use types::{
-    CairoECDSASignature, CairoQuoteHeader, CairoTD10Report, CairoTDXModule, CairoVerificationInputs,
+    CairoECDSASignature, CairoQuoteHeader, CairoTD10Report, CairoTDXModule, CairoTdxModuleTcb,
+    CairoTdxModuleTcbLevel, CairoVerificationInputs,
 };
 
 pub mod types;
@@ -11,7 +12,6 @@ pub mod types;
 pub fn prepare_cairo_inputs(
     quote_bytes: &[u8],
     collaterals: &IntelCollateral,
-    min_isvsvn: u8,
 ) -> CairoVerificationInputs {
     // Parse the quote using Automata's library
     let quote = QuoteV4::from_bytes(quote_bytes);
@@ -71,6 +71,47 @@ pub fn prepare_cairo_inputs(
     // Extract TDX module info from TCBInfo
     let tcbinfo_v3 = collaterals.get_tcbinfov3();
     let tdx_module = if let Some(module) = &tcbinfo_v3.tcb_info.tdx_module {
+        // Get version from quote's TEE TCB SVN
+        let tdx_module_version = if let QuoteBody::TD10QuoteBody(ref body) = quote.quote_body {
+            body.tee_tcb_svn[1]
+        } else {
+            panic!("Not a TD10 quote body");
+        };
+
+        // Pre-format the expected module ID
+        let expected_id = format!("TDX_{:02x}", tdx_module_version);
+
+        // Collect TCB levels and get module ID for the matching version
+        let mut levels = Vec::new();
+        let mut identity_id = String::new();
+
+        if let Some(identities) = &tcbinfo_v3.tcb_info.tdx_module_identities {
+            for identity in identities {
+                // Only include levels from matching module version
+                if identity.id == expected_id {
+                    identity_id = identity.id.clone(); // Get the ID from matching identity
+                    for level in &identity.tcb_levels {
+                        levels.push(CairoTdxModuleTcbLevel {
+                            tcb: CairoTdxModuleTcb {
+                                isvsvn: level.tcb.isvsvn,
+                            },
+                            tcb_date: level.tcb_date.clone(),
+                            tcb_status: match level.tcb_status.as_str() {
+                                "UpToDate" => 0,
+                                "SWHardeningNeeded" => 1,
+                                "ConfigurationNeeded" => 2,
+                                "ConfigurationAndSWHardeningNeeded" => 3,
+                                "OutOfDate" => 4,
+                                "OutOfDateConfigurationNeeded" => 5,
+                                "Revoked" => 6,
+                                _ => 7, // UNRECOGNIZED
+                            },
+                        });
+                    }
+                }
+            }
+        }
+
         let mrsigner = hex::decode(&module.mrsigner).unwrap();
         let mut mrsigner_bytes = [0u8; 48];
         mrsigner_bytes.copy_from_slice(&mrsigner);
@@ -79,6 +120,9 @@ pub fn prepare_cairo_inputs(
             mrsigner: mrsigner_bytes.to_vec(),
             attributes: u64::from_str_radix(&module.attributes, 16).unwrap(),
             attributes_mask: u64::from_str_radix(&module.attributes_mask, 16).unwrap(),
+            identity_id, // Get ID from matching identity
+            expected_id, // Expected ID based on version
+            tcb_levels: levels,
         }
     } else {
         panic!("No TDX module in TCBInfo");
@@ -102,6 +146,5 @@ pub fn prepare_cairo_inputs(
         attestation_pubkey: pubkey,
         tdx_module,
         tcb_info_svn,
-        min_isvsvn,
     }
 }

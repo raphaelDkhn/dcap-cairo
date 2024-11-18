@@ -35,7 +35,22 @@ pub struct CairoTD10Report {
 pub struct CairoTDXModule {
     pub mrsigner: Vec<u8>,
     pub attributes: u64,
-    pub attributes_mask: u64
+    pub attributes_mask: u64,
+    pub identity_id: String, // felt252 as hex string
+    pub expected_id: String, // felt252 as hex string
+    pub tcb_levels: Vec<CairoTdxModuleTcbLevel>
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct CairoTdxModuleTcbLevel {
+    pub tcb: CairoTdxModuleTcb,
+    pub tcb_date: String,  // felt252 as hex string
+    pub tcb_status: u8     // Enum value
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct CairoTdxModuleTcb {
+    pub isvsvn: u8
 }
 
 #[derive(Serialize, Deserialize)]
@@ -51,5 +66,4 @@ pub struct CairoVerificationInputs {
     pub attestation_pubkey: String, // felt252 as hex string
     pub tdx_module: CairoTDXModule,
     pub tcb_info_svn: Vec<u8>,
-    pub min_isvsvn: u8
 }

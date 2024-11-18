@@ -93,10 +93,27 @@ pub struct ECDSASignature {
 pub struct TdxModule {
     pub mrsigner: [u8; 48],
     pub attributes: u64,
-    pub attributes_mask: u64
+    pub attributes_mask: u64,
+    pub identity_id: felt252,
+    pub expected_id: felt252,
+    pub tcb_levels: Span<TdxModuleIdentityTcbLevel>
 }
 
-enum TcbStatus {
+#[derive(Drop, Copy)]
+pub struct TdxModuleIdentityTcbLevel {
+    pub id: felt252,
+    pub tcb: TdxModuleTcb,
+    pub tcb_date: felt252,
+    pub tcb_status: TcbStatus,
+}
+
+#[derive(Drop, Copy)]
+pub struct TdxModuleTcb {
+    pub isvsvn: u8
+}
+
+#[derive(Drop, Copy)]
+pub enum TcbStatus {
     TCB_STATUS_OK,
     TCB_STATUS_SW_HARDENING_NEEDED,
     TCB_STATUS_CONFIG_AND_SW_HARDENING_NEEDED,
