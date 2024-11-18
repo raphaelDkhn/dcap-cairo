@@ -2084,6 +2084,7 @@ dependencies = [
 name = "parser"
 version = "0.0.1"
 dependencies = [
+ "cairo-vm",
  "dcap-rs",
  "hex",
  "serde",

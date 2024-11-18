@@ -1,3 +1,4 @@
+use cairo_vm::Felt252;
 use dcap_rs::types::{
     collaterals::IntelCollateral,
     quotes::{body::QuoteBody, version_4::QuoteV4},
@@ -9,10 +10,7 @@ use types::{
 
 pub mod types;
 
-pub fn prepare_cairo_inputs(
-    quote: &QuoteV4,
-    collaterals: &IntelCollateral,
-) -> CairoVerificationInputs {
+pub fn prepare_cairo_inputs(quote: &QuoteV4, collaterals: &IntelCollateral) -> String {
     // Extract quote header
     let cairo_header = CairoQuoteHeader {
         version: quote.header.version,
@@ -62,7 +60,8 @@ pub fn prepare_cairo_inputs(
     // Get attestation public key
     let pubkey = {
         let key = &quote.signature.ecdsa_attestation_key;
-        format!("0x{}", hex::encode(key))
+        let (x, _y) = key.split_at(32); // Only need x coordinate
+        format!("0x{}", hex::encode(x))
     };
 
     // Extract TDX module info from TCBInfo
@@ -136,12 +135,146 @@ pub fn prepare_cairo_inputs(
         panic!("No TCB levels found");
     };
 
-    CairoVerificationInputs {
+    let cairo_inputs = CairoVerificationInputs {
         quote_header: cairo_header,
         quote_body: td10_body,
         attestation_signature: signature,
         attestation_pubkey: pubkey,
         tdx_module,
         tcb_info_svn,
-    }
+    };
+
+    serialize_inputs(cairo_inputs)
+}
+
+fn serialize_inputs(inputs: CairoVerificationInputs) -> String {
+    let mut serialized: Vec<String> = vec![];
+
+    // Serialize QuoteHeader
+    let quote_header = inputs.quote_header;
+    serialized.push(quote_header.version.to_string());
+    serialized.push(quote_header.att_key_type.to_string());
+    serialized.push(quote_header.tee_type.to_string());
+    quote_header
+        .qe_svn
+        .iter()
+        .for_each(|e| serialized.push(e.to_string()));
+    quote_header
+        .pce_svn
+        .iter()
+        .for_each(|e| serialized.push(e.to_string()));
+    quote_header
+        .qe_vendor_id
+        .iter()
+        .for_each(|e| serialized.push(e.to_string()));
+    quote_header
+        .user_data
+        .iter()
+        .for_each(|e| serialized.push(e.to_string()));
+
+    // Serialize TD10ReportBody
+    let quote_body = inputs.quote_body;
+    quote_body
+        .tee_tcb_svn
+        .iter()
+        .for_each(|e| serialized.push(e.to_string()));
+    quote_body
+        .mrseam
+        .iter()
+        .for_each(|e| serialized.push(e.to_string()));
+    quote_body
+        .mrsignerseam
+        .iter()
+        .for_each(|e| serialized.push(e.to_string()));
+    serialized.push(quote_body.seam_attributes.to_string());
+    serialized.push(quote_body.td_attributes.to_string());
+    serialized.push(quote_body.xfam.to_string());
+    quote_body
+        .mrtd
+        .iter()
+        .for_each(|e| serialized.push(e.to_string()));
+    quote_body
+        .mrconfigid
+        .iter()
+        .for_each(|e| serialized.push(e.to_string()));
+    quote_body
+        .mrowner
+        .iter()
+        .for_each(|e| serialized.push(e.to_string()));
+    quote_body
+        .mrownerconfig
+        .iter()
+        .for_each(|e| serialized.push(e.to_string()));
+    quote_body
+        .rtmr0
+        .iter()
+        .for_each(|e| serialized.push(e.to_string()));
+    quote_body
+        .rtmr1
+        .iter()
+        .for_each(|e| serialized.push(e.to_string()));
+    quote_body
+        .rtmr2
+        .iter()
+        .for_each(|e| serialized.push(e.to_string()));
+    quote_body
+        .rtmr3
+        .iter()
+        .for_each(|e| serialized.push(e.to_string()));
+    quote_body
+        .report_data
+        .iter()
+        .for_each(|e| serialized.push(e.to_string()));
+
+    // Serialize ECDSASignature
+    let attestation_signature = inputs.attestation_signature;
+    serialized.push(
+        Felt252::from_hex(&attestation_signature.r)
+            .unwrap()
+            .to_string(),
+    );
+    serialized.push(
+        Felt252::from_hex(&attestation_signature.s)
+            .unwrap()
+            .to_string(),
+    );
+
+    // Serialize attestation pubkey
+    serialized.push(
+        Felt252::from_hex(&inputs.attestation_pubkey)
+            .unwrap()
+            .to_string(),
+    );
+
+    // Serialize TDXModule
+    let tdx_module = inputs.tdx_module;
+    tdx_module
+        .mrsigner
+        .iter()
+        .for_each(|e| serialized.push(e.to_string()));
+    serialized.push(tdx_module.attributes.to_string());
+    serialized.push(tdx_module.attributes_mask.to_string());
+    serialized.push(
+        Felt252::from_hex(&format!("0x{}", hex::encode(tdx_module.identity_id)))
+            .unwrap()
+            .to_string(),
+    );
+    serialized.push(
+        Felt252::from_hex(&format!("0x{}", hex::encode(tdx_module.expected_id)))
+            .unwrap()
+            .to_string(),
+    );
+    tdx_module.tcb_levels.iter().for_each(|e| {
+        serialized.push(e.tcb.isvsvn.to_string());
+        serialized.push(Felt252::from_hex("0x123").unwrap().to_string());
+        serialized.push(e.tcb_status.to_string());
+    });
+
+    // Serialize tcb info svn
+    inputs
+        .tcb_info_svn
+        .iter()
+        .for_each(|e| serialized.push(e.to_string()));
+
+    serialized.join(" ")
 }

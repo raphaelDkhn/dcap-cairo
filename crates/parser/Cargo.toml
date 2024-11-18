@@ -9,3 +9,4 @@ license.workspace = true
 dcap-rs.workspace = true
 hex = "0.4.3"
 serde = "1.0.215"
+cairo-vm.workspace = true
