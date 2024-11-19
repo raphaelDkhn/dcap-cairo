@@ -36,7 +36,7 @@ fn main() {
     let exe_dir = exe_path
         .parent()
         .expect("Failed to get the executable directory");
-    let sierra_file = exe_dir.join("../../target/dev/dcap_cairo.sierra.json");
+    let sierra_file = exe_dir.join("../../target/dev/tdx_cairo_verifier.sierra.json");
 
     // Run Cairo program with processed inputs
     let res = cairo_run(&process_args(&cairo_inputs).unwrap().0, sierra_file);
