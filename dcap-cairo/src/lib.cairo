@@ -13,64 +13,7 @@ pub mod constants;
 pub mod types;
 pub mod common;
 
-#[starknet::interface]
-pub trait ITdxVerifier<TContractState> {
-    fn verify_tdx(
-        self: @TContractState,
-        quote_header: QuoteHeader,
-        quote_body: TD10ReportBody,
-        attestation_signature: Signature,
-        attestation_pubkey: AttestationPubKey,
-        tdx_module: TdxModule,
-        tcb_info_svn: Span<u8>,
-    ) -> bool;
-}
-
-#[starknet::contract]
-mod TdxVerifier {
-    use super::{QuoteHeader, TD10ReportBody, Signature, TdxModule, AttestationPubKey};
-    use super::{verify_quote_signature, verify_tdx_module, verify_tdx_tcb};
-
-    #[storage]
-    struct Storage {}
-
-
-    #[abi(embed_v0)]
-    impl TdxVerifierImpl of super::ITdxVerifier<ContractState> {
-        fn verify_tdx(
-            self: @ContractState,
-            quote_header: QuoteHeader,
-            quote_body: TD10ReportBody,
-            attestation_signature: Signature,
-            attestation_pubkey: AttestationPubKey,
-            tdx_module: TdxModule,
-            tcb_info_svn: Span<u8>,
-        ) -> bool {
-            // Verify quote signature
-            if !verify_quote_signature(
-                @quote_header, @quote_body, @attestation_signature, attestation_pubkey,
-            ) {
-                return false;
-            }
-
-            // Verify TDX module identity
-            if !verify_tdx_module(@quote_body, @tdx_module) {
-                return false;
-            }
-
-            // Get TCB status from TDX module verification
-            let tcb_status = verify_tdx_tcb(quote_body.tee_tcb_svn, @tdx_module);
-            if tcb_status != 0 {
-                return false;
-            }
-
-            true
-        }
-    }
-}
-
-
-fn check_quote_header(header: @QuoteHeader) -> bool {
+pub fn check_quote_header(header: @QuoteHeader) -> bool {
     // Version check
     if *header.version != 4 {
         return false;
@@ -94,7 +37,7 @@ fn check_quote_header(header: @QuoteHeader) -> bool {
     return true;
 }
 
-fn verify_quote_signature(
+pub fn verify_quote_signature(
     quote_header: @QuoteHeader,
     quote_body: @TD10ReportBody,
     attestation_signature: @Signature,
@@ -142,7 +85,7 @@ fn verify_quote_signature(
 }
 
 // Verify TDX module identity matches TCB info
-fn verify_tdx_module(quote_body: @TD10ReportBody, tdx_module: @TdxModule) -> bool {
+pub fn verify_tdx_module(quote_body: @TD10ReportBody, tdx_module: @TdxModule) -> bool {
     // Check MRSIGNER matches
     if (*quote_body.mrsignerseam) != (*tdx_module.mrsigner) {
         return false;
@@ -157,7 +100,7 @@ fn verify_tdx_module(quote_body: @TD10ReportBody, tdx_module: @TdxModule) -> boo
 }
 
 // Verify TCB level
-fn verify_tdx_tcb(tee_tcb_svn: Span<u8>, tdx_module: @TdxModule) -> u8 {
+pub fn verify_tdx_tcb(tee_tcb_svn: Span<u8>, tdx_module: @TdxModule) -> u8 {
     // Get ISV SVN and version from TEE TCB SVN
     let tdx_module_isv_svn = *tee_tcb_svn[0];
     let tdx_module_version = *tee_tcb_svn[1];
