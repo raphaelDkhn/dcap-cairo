@@ -1,3 +1,5 @@
+use ethnum::u256;
+
 pub struct QuoteHeader {
     pub version: u16,
     pub att_key_type: u16,
@@ -53,14 +55,14 @@ pub struct TdxModuleTcb {
 }
 
 pub struct AttestationPubKey {
-    pub x: u128,
-    pub y: u128,
+    pub x: u256,
+    pub y: u256,
 }
 
 /// Secp256r1 ECDSA signature.
 pub struct Signature {
-    pub r: u128,
-    pub s: u128,
+    pub r: u256,
+    pub s: u256,
     pub y_parity: bool,
 }
 

@@ -1,111 +1,77 @@
-use cairo_lang_macro::{inline_macro, ProcMacroResult, TokenStream};
-use cairo_lang_parser::utils::SimpleParserDatabase;
-use cairo_lang_syntax::node::kind::SyntaxKind::Arg;
 use dcap_rs::types::collaterals::IntelCollateral;
 use dcap_rs::types::quotes::version_4::QuoteV4;
 use preprocess::parser::prepare_cairo_inputs;
-use std::env;
 
-#[inline_macro]
-pub fn parse_tdx(token_stream: TokenStream) -> ProcMacroResult {
-    let db = SimpleParserDatabase::default();
-    let (parsed, _diag) = db.parse_virtual_with_diagnostics(token_stream);
+use std::fs::File;
+use std::io::Write;
 
-    // Extract file paths from macro arguments and clean them
-    let paths: Vec<String> = parsed
-        .descendants(&db)
-        .filter_map(|node| {
-            if let Arg = node.kind(&db) {
-                Some(node.get_text(&db).trim().replace("\"", "").to_string())
-            } else {
-                None
-            }
-        })
-        .collect();
+pub fn main() {
+    // Load TDX quote from binary data file
+    let quote = QuoteV4::from_bytes(include_bytes!("../data/quote_tdx_00806f050000.dat"));
 
-    if paths.len() != 8 {
-        return ProcMacroResult::new(TokenStream::empty())
-            .with_diagnostics(cairo_lang_macro::Diagnostic::error("Expected 8 file paths").into());
-    }
-
-    // Get the project root directory (two levels up from manifest dir)
-    let project_root = env::current_dir()
-        .unwrap()
-        .parent() // up from contract
-        .unwrap()
-        .to_path_buf();
-
-    let read_file = |rel_path: &str| -> Vec<u8> {
-        let abs_path = project_root.join(rel_path);
-        std::fs::read(&abs_path)
-            .unwrap_or_else(|e| panic!("Failed to read {}: {}", abs_path.display(), e))
-    };
-
-    // Read quote file
-    let quote_bytes = read_file(&paths[0]);
-    let quote = QuoteV4::from_bytes(&quote_bytes);
-
-    // Initialize collaterals
+    // Initialize Intel collateral structure and load verification data
     let mut collaterals = IntelCollateral::new();
-    collaterals.set_tcbinfo_bytes(&read_file(&paths[1]));
-    collaterals.set_qeidentity_bytes(&read_file(&paths[2]));
-    collaterals.set_intel_root_ca_der(&read_file(&paths[3]));
-    collaterals.set_sgx_tcb_signing_pem(&read_file(&paths[4]));
-    collaterals.set_sgx_intel_root_ca_crl_der(&read_file(&paths[5]));
-    collaterals.set_sgx_platform_crl_der(&read_file(&paths[6]));
-    collaterals.set_sgx_processor_crl_der(&read_file(&paths[7]));
+    collaterals.set_tcbinfo_bytes(include_bytes!("../data/tcbinfov3_00806f050000.json"));
+    collaterals.set_qeidentity_bytes(include_bytes!("../data/qeidentityv2_apiv4.json"));
+    collaterals.set_intel_root_ca_der(include_bytes!(
+        "../data/Intel_SGX_Provisioning_Certification_RootCA.cer"
+    ));
+    collaterals.set_sgx_tcb_signing_pem(include_bytes!("../data/signing_cert.pem"));
+    collaterals.set_sgx_intel_root_ca_crl_der(include_bytes!("../data/intel_root_ca_crl.der"));
+    collaterals.set_sgx_platform_crl_der(include_bytes!("../data/pck_platform_crl.der"));
+    collaterals.set_sgx_processor_crl_der(include_bytes!("../data/pck_processor_crl.der"));
 
     // Prepare inputs for Cairo contract
     let inputs = prepare_cairo_inputs(&quote, &collaterals);
 
     // Generate Cairo code for constructor arguments
     let cairo_code = format!(
-        "dispatcher.verify_tdx(
-            QuoteHeader {{
+        "
+            let quote_header = QuoteHeader {{
                 version: {},
                 att_key_type: {},
                 tee_type: {},
-                qe_svn: array![{}].span(),
-                pce_svn: array![{}].span(),
-                qe_vendor_id: array![{}].span(),
-                user_data: array![{}].span()
-            }},
-            TD10ReportBody {{
-                tee_tcb_svn: array![{}].span(),
-                mrseam: array![{}].span(),
-                mrsignerseam: array![{}].span(),
+                qe_svn: [{}].span(),
+                pce_svn: [{}].span(),
+                qe_vendor_id: [{}].span(),
+                user_data: [{}].span()
+            }};
+            let quote_body = TD10ReportBody {{
+                tee_tcb_svn: [{}].span(),
+                mrseam: [{}].span(),
+                mrsignerseam: [{}].span(),
                 seam_attributes: {},
                 td_attributes: {},
                 xfam: {},
-                mrtd: array![{}].span(),
-                mrconfigid: array![{}].span(),
-                mrowner: array![{}].span(),
-                mrownerconfig: array![{}].span(),
-                rtmr0: array![{}].span(),
-                rtmr1: array![{}].span(),
-                rtmr2: array![{}].span(),
-                rtmr3: array![{}].span(),
-                report_data: array![{}].span(),
-            }},
-            Signature {{ 
+                mrtd: [{}].span(),
+                mrconfigid: [{}].span(),
+                mrowner: [{}].span(),
+                mrownerconfig: [{}].span(),
+                rtmr0: [{}].span(),
+                rtmr1: [{}].span(),
+                rtmr2: [{}].span(),
+                rtmr3: [{}].span(),
+                report_data: [{}].span(),
+            }};
+            let attestation_signature = Signature {{ 
                 r: {}, 
                 s: {}, 
                 y_parity: {} 
-            }},
-            AttestationPubKey {{ 
+            }};
+            let attestation_pubkey = AttestationPubKey {{ 
                 x: {}, 
                 y: {} 
-            }},
-            TdxModule {{
-                mrsigner: array![{}].span(),
+            }};
+            let tdx_module = TdxModule {{
+                mrsigner: [{}].span(),
                 attributes: {},
                 attributes_mask: {},
-                identity_id: \"{}\",
-                expected_id: \"{}\",
+                identity_id: {},
+                expected_id: {},
                 tcb_levels: {}
-            }},
-            array![{}].span()
-        )",
+            }};
+            let tcb_info_svn = [{}].span();
+        ",
         // Quote Header
         inputs.quote_header.version,
         inputs.quote_header.att_key_type,
@@ -143,7 +109,7 @@ pub fn parse_tdx(token_stream: TokenStream) -> ProcMacroResult {
         inputs.tdx_module.attributes_mask,
         inputs.tdx_module.identity_id,
         inputs.tdx_module.expected_id,
-        format!("array![{}].span()", 
+        format!("[{}].span()", 
             inputs.tdx_module.tcb_levels.iter()
                 .map(|level| format!("TdxModuleIdentityTcbLevel {{ tcb: TdxModuleTcb {{ isvsvn: {} }}, tcb_status: {} }}", 
                     level.tcb.isvsvn, level.tcb_status))
@@ -154,5 +120,10 @@ pub fn parse_tdx(token_stream: TokenStream) -> ProcMacroResult {
         inputs.tcb_info_svn.iter().map(|b| b.to_string()).collect::<Vec<_>>().join(", ")
     );
 
-    ProcMacroResult::new(TokenStream::new(cairo_code))
+    let path = "test_data.txt";
+    let mut file = File::create(path).expect("Could not create file");
+
+    // Write the cairo code to the file
+    file.write_all(cairo_code.as_bytes())
+        .expect("Could not write to file");
 }

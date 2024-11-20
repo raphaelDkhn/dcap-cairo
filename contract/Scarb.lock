@@ -55,7 +55,6 @@ name = "dcap_cairo"
 version = "0.1.0"
 dependencies = [
  "alexandria_data_structures",
- "tdx_macros",
 ]
 
 [[package]]
@@ -70,10 +69,6 @@ source = "git+https://github.com/foundry-rs/starknet-foundry?tag=v0.33.0#221b1db
 dependencies = [
  "snforge_scarb_plugin",
 ]
-
-[[package]]
-name = "tdx_macros"
-version = "0.1.0"
 
 [[package]]
 name = "tdx_verifier"

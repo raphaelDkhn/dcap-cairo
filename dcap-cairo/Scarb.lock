@@ -55,9 +55,4 @@ name = "dcap_cairo"
 version = "0.1.0"
 dependencies = [
  "alexandria_data_structures",
- "tdx_macros",
 ]
-
-[[package]]
-name = "tdx_macros"
-version = "0.1.0"

@@ -2,6 +2,7 @@ use dcap_rs::types::{
     collaterals::IntelCollateral,
     quotes::{body::QuoteBody, version_4::QuoteV4},
 };
+use ethnum::u256;
 
 use crate::types::{
     AttestationPubKey, ContractInputs, QuoteHeader, Signature, TD10ReportBody, TdxModule,
@@ -49,13 +50,13 @@ pub fn prepare_cairo_inputs(quote: &QuoteV4, collaterals: &IntelCollateral) -> C
         let (r, s) = sig.split_at(32);
 
         // Convert both parts of the signature
-        let r_u128 = slice_to_u128(r).expect("Invalid R component");
-        let s_u128 = slice_to_u128(s).expect("Invalid S component");
+        let r_u256 = u256::from_le_bytes(*try_into_array(r).unwrap());
+        let s_u256 = u256::from_le_bytes(*try_into_array(s).unwrap());
 
         // Create the signature struct
         Signature {
-            r: r_u128,
-            s: s_u128,
+            r: r_u256,
+            s: s_u256,
             y_parity: false,
         }
     };
@@ -65,8 +66,8 @@ pub fn prepare_cairo_inputs(quote: &QuoteV4, collaterals: &IntelCollateral) -> C
         let key = &quote.signature.ecdsa_attestation_key;
         let (x, y) = key.split_at(32);
         AttestationPubKey {
-            x: slice_to_u128(x).expect("Invalid X component"),
-            y: slice_to_u128(y).expect("Invalid X component"),
+            x: u256::from_le_bytes(*try_into_array(x).unwrap()),
+            y: u256::from_le_bytes(*try_into_array(y).unwrap()),
         }
     };
 
@@ -150,13 +151,12 @@ pub fn prepare_cairo_inputs(quote: &QuoteV4, collaterals: &IntelCollateral) -> C
     }
 }
 
-// Helper function to convert a slice to u128
-fn slice_to_u128(slice: &[u8]) -> Result<u128, &'static str> {
-    if slice.len() == 16 {
-        Ok(u128::from_le_bytes(
-            slice.try_into().expect("slice with incorrect length"),
-        ))
+// Helper function to convert slice &[u8] to &[u8; 32]
+fn try_into_array(slice: &[u8]) -> Result<&[u8; 32], &'static str> {
+    if slice.len() == 32 {
+        let ptr = slice.as_ptr() as *const [u8; 32];
+        unsafe { Ok(&*ptr) }
     } else {
-        Err("Incorrect number of bytes")
+        Err("Slice must be exactly 32 bytes long")
     }
 }
