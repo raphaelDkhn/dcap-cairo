@@ -14,9 +14,9 @@ pub mod types;
 pub mod common;
 
 #[starknet::interface]
-trait ITdxVerifier<TContractState> {
+pub trait ITdxVerifier<TContractState> {
     fn verify_tdx(
-        ref self: TContractState,
+        self: @TContractState,
         quote_header: QuoteHeader,
         quote_body: TD10ReportBody,
         attestation_signature: Signature,
@@ -27,7 +27,7 @@ trait ITdxVerifier<TContractState> {
 }
 
 #[starknet::contract]
-mod TdxVerifierContract {
+mod TdxVerifier {
     use super::{QuoteHeader, TD10ReportBody, Signature, TdxModule, AttestationPubKey};
     use super::{verify_quote_signature, verify_tdx_module, verify_tdx_tcb};
 
@@ -36,9 +36,9 @@ mod TdxVerifierContract {
 
 
     #[abi(embed_v0)]
-    impl TdxVerifier of super::ITdxVerifier<ContractState> {
+    impl TdxVerifierImpl of super::ITdxVerifier<ContractState> {
         fn verify_tdx(
-            ref self: ContractState,
+            self: @ContractState,
             quote_header: QuoteHeader,
             quote_body: TD10ReportBody,
             attestation_signature: Signature,
