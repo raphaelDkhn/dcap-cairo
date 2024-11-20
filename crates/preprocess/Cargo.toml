@@ -1,0 +1,13 @@
+[package]
+name = "preprocess"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dcap-rs = { git = "https://github.com/automata-network/dcap-rs.git", rev = "bd86987" }
+hex = "0.4.3"
+serde = "1.0.215"
+cairo-vm = { git = "https://github.com/lambdaclass/cairo-vm", rev = "0d86936", features = [
+    "std",
+    "cairo-1-hints",
+] }
