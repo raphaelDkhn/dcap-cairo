@@ -6,6 +6,7 @@ edition = "2024_07"
 
 [dependencies]
 alexandria_data_structures = {git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "95d98a5"}
+tdx_macros = { path = "../macros" }
 
 [dev-dependencies]
 cairo_test = "2.8.4"

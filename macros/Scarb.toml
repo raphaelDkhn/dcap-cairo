@@ -1,0 +1,9 @@
+[package]
+name = "tdx_macros"
+version = "0.1.0"
+edition = "2024_07"
+
+[cairo-plugin]
+
+[dev-dependencies]
+cairo_test = "2.8.4"
