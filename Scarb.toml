@@ -10,7 +10,10 @@ alexandria_data_structures = {git = "https://github.com/keep-starknet-strange/al
 
 [dev-dependencies]
 cairo_test = "2.8.4"
+snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry.git", tag = "v0.33.0" }
 
 
 [cairo]
-enable-gas = false
+enable-gas = true
+
+[[target.starknet-contract]]

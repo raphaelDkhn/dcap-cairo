@@ -12,36 +12,62 @@ pub mod constants;
 pub mod types;
 pub mod common;
 
-fn main(
-    quote_header: QuoteHeader,
-    quote_body: TD10ReportBody,
-    attestation_signature: ECDSASignature,
-    attestation_pubkey: felt252,
-    tdx_module: TdxModule,
-    tcb_info_svn: Span<u8>,
-) -> bool {
-    // Verify quote signature
-    if !verify_quote_signature(
-        @quote_header, @quote_body, @attestation_signature, attestation_pubkey
-    ) {
-        return false;
-    }
-
-    // Verify TDX module identity
-    if !verify_tdx_module(@quote_body, @tdx_module) {
-        return false;
-    }
-
-    // Get TCB status from TDX module verification
-    let tcb_status = verify_tdx_tcb(quote_body.tee_tcb_svn.span(), @tdx_module);
-
-    // Convert TCB status to bool result
-    if tcb_status != 0 {
-        return false;
-    }
-
-    true
+#[starknet::interface]
+trait ITdxVerifier<TContractState> {
+    fn verify_tdx(
+        ref self: TContractState,
+        quote_header: QuoteHeader,
+        quote_body: TD10ReportBody,
+        attestation_signature: ECDSASignature,
+        attestation_pubkey: felt252,
+        tdx_module: TdxModule,
+        tcb_info_svn: Span<u8>,
+    ) -> bool;
 }
+
+#[starknet::contract]
+mod TdxVerifierContract {
+    use super::{QuoteHeader, TD10ReportBody, ECDSASignature, TdxModule};
+    use super::{verify_quote_signature, verify_tdx_module, verify_tdx_tcb};
+
+    #[storage]
+    struct Storage {}
+
+
+    #[abi(embed_v0)]
+    impl TdxVerifier of super::ITdxVerifier<ContractState> {
+        fn verify_tdx(
+            ref self: ContractState,
+            quote_header: QuoteHeader,
+            quote_body: TD10ReportBody,
+            attestation_signature: ECDSASignature,
+            attestation_pubkey: felt252,
+            tdx_module: TdxModule,
+            tcb_info_svn: Span<u8>,
+        ) -> bool {
+            // Verify quote signature
+            if !verify_quote_signature(
+                @quote_header, @quote_body, @attestation_signature, attestation_pubkey
+            ) {
+                return false;
+            }
+
+            // Verify TDX module identity
+            if !verify_tdx_module(@quote_body, @tdx_module) {
+                return false;
+            }
+
+            // Get TCB status from TDX module verification
+            let tcb_status = verify_tdx_tcb(quote_body.tee_tcb_svn, @tdx_module);
+            if tcb_status != 0 {
+                return false;
+            }
+
+            true
+        }
+    }
+}
+
 
 fn check_quote_header(header: @QuoteHeader) -> bool {
     // Version check
@@ -60,7 +86,7 @@ fn check_quote_header(header: @QuoteHeader) -> bool {
     }
 
     // Vendor ID check
-    if header.qe_vendor_id.span() != INTEL_QE_VENDOR_ID.span() {
+    if *header.qe_vendor_id != INTEL_QE_VENDOR_ID.span() {
         return false;
     }
 
@@ -99,7 +125,7 @@ fn verify_quote_signature(
 // Verify TDX module identity matches TCB info
 fn verify_tdx_module(quote_body: @TD10ReportBody, tdx_module: @TdxModule) -> bool {
     // Check MRSIGNER matches
-    if (*quote_body.mrsignerseam).span() != (*tdx_module.mrsigner).span() {
+    if (*quote_body.mrsignerseam) != (*tdx_module.mrsigner) {
         return false;
     }
 
