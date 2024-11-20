@@ -1,4 +1,4 @@
-use crate::common::{U16BytesImpl, U32BytesImpl, U64BytesImpl};
+use crate::common::bytes::{U16BytesImpl, U32BytesImpl, U64BytesImpl};
 
 #[derive(Copy, Drop)]
 pub struct QuoteHeader {

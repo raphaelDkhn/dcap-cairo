@@ -1,11 +1,11 @@
+use starknet::SyscallResultTrait;
 use crate::types::{
     QuoteHeader, QuoteHeaderImpl, TdxModule, TD10ReportBody, TD10ReportBodyImpl, ECDSASignature
 };
 use crate::constants::{INTEL_QE_VENDOR_ID, ECDSA_256_WITH_P256_CURVE, TDX_TEE_TYPE};
+use crate::common::sha256::compute_sha256_byte_array;
 use alexandria_data_structures::span_ext::SpanTraitExt;
 use alexandria_data_structures::byte_array_ext::SpanU8IntoBytearray;
-
-use core::sha256::compute_sha256_byte_array;
 use core::ecdsa::check_ecdsa_signature;
 
 pub mod constants;
@@ -79,13 +79,9 @@ fn verify_quote_signature(
     }
 
     // Concatenate header and quote body data for signature verification
-    let mut _message = (*quote_header).to_bytes().concat((*quote_body).to_bytes());
+    let mut message = (*quote_header).to_bytes().concat((*quote_body).to_bytes());
 
-    // Hash the message with SHA256
-    // BUG: Compute a SHA-256 in causes inconsistent memory error in CairoVM.
-    // here is the issue on CairoVM repo: https://github.com/lambdaclass/cairo-vm/issues/1874
-    // So I'm commenting this block for the moment.
-    {// let message_hash = compute_sha256_byte_array(@message.span().into());
+    // let message_hash = compute_sha256_byte_array(@message.span().into());
 
     // // Convert message hash bytes to felt
     // let mut serialzed: Array<felt252> = ArrayTrait::new();
@@ -97,8 +93,6 @@ fn verify_quote_signature(
     // check_ecdsa_signature(
     //     message_hash, attestation_pubkey, *attestation_signature.r, *attestation_signature.s
     // )
-    }
-
     true
 }
 
