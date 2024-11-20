@@ -82,12 +82,6 @@ pub struct VerifiedQuote {
     pub quote_body: TD10ReportBody
 }
 
-#[derive(Copy, Drop, Serde)]
-pub struct ECDSASignature {
-    pub r: felt252,
-    pub s: felt252
-}
-
 // TDX Module Fields parsed from TCBInfo
 #[derive(Drop, Serde)]
 pub struct TdxModule {
@@ -108,6 +102,12 @@ pub struct TdxModuleIdentityTcbLevel {
 #[derive(Drop, Copy, Serde)]
 pub struct TdxModuleTcb {
     pub isvsvn: u8
+}
+
+#[derive(Drop, Copy, Serde)]
+pub struct AttestationPubKey {
+    pub x: u256,
+    pub y: u256
 }
 
 const TCB_STATUS_OK: u8 = 0;

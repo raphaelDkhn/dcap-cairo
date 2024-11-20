@@ -1,12 +1,13 @@
 use starknet::SyscallResultTrait;
 use crate::types::{
-    QuoteHeader, QuoteHeaderImpl, TdxModule, TD10ReportBody, TD10ReportBodyImpl, ECDSASignature
+    QuoteHeader, QuoteHeaderImpl, TdxModule, TD10ReportBody, TD10ReportBodyImpl, AttestationPubKey
 };
 use crate::constants::{INTEL_QE_VENDOR_ID, ECDSA_256_WITH_P256_CURVE, TDX_TEE_TYPE};
-use crate::common::sha256::compute_sha256_byte_array;
 use alexandria_data_structures::span_ext::SpanTraitExt;
 use alexandria_data_structures::byte_array_ext::SpanU8IntoBytearray;
-use core::ecdsa::check_ecdsa_signature;
+use core::sha256::compute_sha256_byte_array;
+use core::starknet::secp256_trait::{Signature, Secp256Trait, is_valid_signature};
+use core::starknet::secp256r1::Secp256r1Point;
 
 pub mod constants;
 pub mod types;
@@ -18,8 +19,8 @@ trait ITdxVerifier<TContractState> {
         ref self: TContractState,
         quote_header: QuoteHeader,
         quote_body: TD10ReportBody,
-        attestation_signature: ECDSASignature,
-        attestation_pubkey: felt252,
+        attestation_signature: Signature,
+        attestation_pubkey: AttestationPubKey,
         tdx_module: TdxModule,
         tcb_info_svn: Span<u8>,
     ) -> bool;
@@ -27,7 +28,7 @@ trait ITdxVerifier<TContractState> {
 
 #[starknet::contract]
 mod TdxVerifierContract {
-    use super::{QuoteHeader, TD10ReportBody, ECDSASignature, TdxModule};
+    use super::{QuoteHeader, TD10ReportBody, Signature, TdxModule, AttestationPubKey};
     use super::{verify_quote_signature, verify_tdx_module, verify_tdx_tcb};
 
     #[storage]
@@ -40,14 +41,14 @@ mod TdxVerifierContract {
             ref self: ContractState,
             quote_header: QuoteHeader,
             quote_body: TD10ReportBody,
-            attestation_signature: ECDSASignature,
-            attestation_pubkey: felt252,
+            attestation_signature: Signature,
+            attestation_pubkey: AttestationPubKey,
             tdx_module: TdxModule,
             tcb_info_svn: Span<u8>,
         ) -> bool {
             // Verify quote signature
             if !verify_quote_signature(
-                @quote_header, @quote_body, @attestation_signature, attestation_pubkey
+                @quote_header, @quote_body, @attestation_signature, attestation_pubkey,
             ) {
                 return false;
             }
@@ -96,8 +97,8 @@ fn check_quote_header(header: @QuoteHeader) -> bool {
 fn verify_quote_signature(
     quote_header: @QuoteHeader,
     quote_body: @TD10ReportBody,
-    attestation_signature: @ECDSASignature,
-    attestation_pubkey: felt252,
+    attestation_signature: @Signature,
+    attestation_pubkey: AttestationPubKey,
 ) -> bool {
     // Check header fields
     if !check_quote_header(quote_header) {
@@ -107,19 +108,37 @@ fn verify_quote_signature(
     // Concatenate header and quote body data for signature verification
     let mut message = (*quote_header).to_bytes().concat((*quote_body).to_bytes());
 
-    // let message_hash = compute_sha256_byte_array(@message.span().into());
+    // Hash message to SHA-256
+    let message_hash: [u32; 8] = compute_sha256_byte_array(@message.span().into());
 
-    // // Convert message hash bytes to felt
-    // let mut serialzed: Array<felt252> = ArrayTrait::new();
-    // message_hash.serialize(ref serialzed);
-    // assert(serialzed.len() == 1, 'Wrong size');
-    // let message_hash = *serialzed[0];
+    // Convert message hash array to u256
+    let message_hash_u256 = u256 {
+        low: ((*message_hash.span()[0]).into() * 0x100000000_u128
+            + (*message_hash.span()[1]).into())
+            + ((*message_hash.span()[2]).into() * 0x100000000_u128
+                + (*message_hash.span()[3]).into())
+                * 0x100000000_u128,
+        high: ((*message_hash.span()[4]).into() * 0x100000000_u128
+            + (*message_hash.span()[5]).into())
+            + ((*message_hash.span()[6]).into() * 0x100000000_u128
+                + (*message_hash.span()[7]).into())
+                * 0x100000000_u128,
+    };
 
-    // // Check ECDSA signature
-    // check_ecdsa_signature(
-    //     message_hash, attestation_pubkey, *attestation_signature.r, *attestation_signature.s
-    // )
-    true
+    // Create public key point from x,y coordinates
+    let pubkey_point =
+        match Secp256Trait::<
+            Secp256r1Point
+        >::secp256_ec_new_syscall(attestation_pubkey.x, attestation_pubkey.y)
+            .unwrap_syscall() {
+        Option::Some(point) => point,
+        Option::None => { return false; }
+    };
+
+    // Validate ECDSA signature using secp256r1
+    is_valid_signature::<
+        Secp256r1Point
+    >(message_hash_u256, *attestation_signature.r, *attestation_signature.s, pubkey_point)
 }
 
 // Verify TDX module identity matches TCB info
