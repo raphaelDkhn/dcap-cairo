@@ -54,6 +54,7 @@ pub struct TdxModuleTcb {
     pub isvsvn: u8,
 }
 
+#[derive(Debug)]
 pub struct AttestationPubKey {
     pub x: u256,
     pub y: u256,

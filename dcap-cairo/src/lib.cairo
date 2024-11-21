@@ -75,13 +75,14 @@ pub fn verify_quote_signature(
         >::secp256_ec_new_syscall(attestation_pubkey.x, attestation_pubkey.y)
             .unwrap_syscall() {
         Option::Some(point) => point,
-        Option::None => { return false; }
+        Option::None => { return false; } 
     };
 
     // Validate ECDSA signature using secp256r1
     is_valid_signature::<
         Secp256r1Point
     >(message_hash_u256, *attestation_signature.r, *attestation_signature.s, pubkey_point)
+
 }
 
 // Verify TDX module identity matches TCB info

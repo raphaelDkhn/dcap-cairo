@@ -44,14 +44,14 @@ pub fn prepare_cairo_inputs(quote: &QuoteV4, collaterals: &IntelCollateral) -> C
         panic!("Not a TD10 quote body");
     };
 
-    // Extract ECDSA signature
+    // Extract ECDSA attestation signature
     let signature = {
         let sig = &quote.signature.quote_signature;
         let (r, s) = sig.split_at(32);
 
         // Convert both parts of the signature
-        let r_u256 = u256::from_le_bytes(*try_into_array(r).unwrap());
-        let s_u256 = u256::from_le_bytes(*try_into_array(s).unwrap());
+        let r_u256 = u256::from_be_bytes(*try_into_array(r).unwrap());
+        let s_u256 = u256::from_be_bytes(*try_into_array(s).unwrap());
 
         // Create the signature struct
         Signature {
@@ -61,14 +61,16 @@ pub fn prepare_cairo_inputs(quote: &QuoteV4, collaterals: &IntelCollateral) -> C
         }
     };
 
-    // Get attestation public key
+    // Get ECDSA attestation public key
     let pubkey = {
         let key = &quote.signature.ecdsa_attestation_key;
-        let (x, y) = key.split_at(32);
-        AttestationPubKey {
-            x: u256::from_le_bytes(*try_into_array(x).unwrap()),
-            y: u256::from_le_bytes(*try_into_array(y).unwrap()),
-        }
+        // Split the 64 byte key into x and y coordinates (32 bytes each)
+        let (x_bytes, y_bytes) = key.split_at(32);
+        // Convert to big-endian representation for u256
+        let x = u256::from_be_bytes(x_bytes.try_into().unwrap());
+        let y = u256::from_be_bytes(y_bytes.try_into().unwrap());
+
+        AttestationPubKey { x, y }
     };
 
     // Extract TDX module info from TCBInfo
