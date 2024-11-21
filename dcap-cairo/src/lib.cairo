@@ -54,18 +54,16 @@ pub fn verify_quote_signature(
     // Hash message to SHA-256
     let message_hash: [u32; 8] = compute_sha256_byte_array(@message.span().into());
 
-    // Convert message hash array to u256
+    // Convert to u256
     let message_hash_u256 = u256 {
-        low: ((*message_hash.span()[0]).into() * 0x100000000_u128
-            + (*message_hash.span()[1]).into())
-            + ((*message_hash.span()[2]).into() * 0x100000000_u128
-                + (*message_hash.span()[3]).into())
-                * 0x100000000_u128,
-        high: ((*message_hash.span()[4]).into() * 0x100000000_u128
-            + (*message_hash.span()[5]).into())
-            + ((*message_hash.span()[6]).into() * 0x100000000_u128
-                + (*message_hash.span()[7]).into())
-                * 0x100000000_u128,
+        high: ((*message_hash.span()[0]).into() * 0x1000000000000000000000000)
+            + ((*message_hash.span()[1]).into() * 0x10000000000000000)
+            + ((*message_hash.span()[2]).into() * 0x100000000)
+            + (*message_hash.span()[3]).into(),
+        low: ((*message_hash.span()[4]).into() * 0x1000000000000000000000000)
+            + ((*message_hash.span()[5]).into() * 0x10000000000000000)
+            + ((*message_hash.span()[6]).into() * 0x100000000)
+            + (*message_hash.span()[7]).into()
     };
 
     // Create public key point from x,y coordinates
@@ -75,14 +73,13 @@ pub fn verify_quote_signature(
         >::secp256_ec_new_syscall(attestation_pubkey.x, attestation_pubkey.y)
             .unwrap_syscall() {
         Option::Some(point) => point,
-        Option::None => { return false; } 
+        Option::None => { return false; }
     };
 
     // Validate ECDSA signature using secp256r1
     is_valid_signature::<
         Secp256r1Point
     >(message_hash_u256, *attestation_signature.r, *attestation_signature.s, pubkey_point)
-
 }
 
 // Verify TDX module identity matches TCB info

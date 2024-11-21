@@ -47,11 +47,11 @@ pub fn prepare_cairo_inputs(quote: &QuoteV4, collaterals: &IntelCollateral) -> C
     // Extract ECDSA attestation signature
     let signature = {
         let sig = &quote.signature.quote_signature;
-        let (r, s) = sig.split_at(32);
+        let (r_bytes, s_bytes) = sig.split_at(32);
 
         // Convert both parts of the signature
-        let r_u256 = u256::from_be_bytes(*try_into_array(r).unwrap());
-        let s_u256 = u256::from_be_bytes(*try_into_array(s).unwrap());
+        let r_u256 = u256::from_be_bytes(*try_into_array(r_bytes).unwrap());
+        let s_u256 = u256::from_be_bytes(*try_into_array(s_bytes).unwrap());
 
         // Create the signature struct
         Signature {
