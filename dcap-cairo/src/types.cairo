@@ -104,8 +104,20 @@ pub struct TdxModuleTcb {
     pub isvsvn: u8
 }
 
-#[derive(Drop, Copy, Serde)]
-pub struct AttestationPubKey {
+pub struct Dates {
+    pub current_time: u64,
+    pub issue_date_seconds: u64,
+    pub next_update_seconds: u64
+}
+
+#[derive(Drop, Serde)]
+pub struct EnclaveIdentityV2 {
+    pub signature: Span<u8>, //  P256 ECDSA signature
+    pub data: [u32; 8] 
+}
+
+#[derive(Drop, Serde)]
+pub struct PubKey {
     pub x: u256,
     pub y: u256
 }

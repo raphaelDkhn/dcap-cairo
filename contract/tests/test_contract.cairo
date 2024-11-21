@@ -5,7 +5,7 @@ use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
 use tdx_verifier::ITdxVerifierDispatcher;
 use tdx_verifier::ITdxVerifierDispatcherTrait;
 use dcap_cairo::types::{
-    QuoteHeader, TD10ReportBody, AttestationPubKey, TdxModule, TdxModuleIdentityTcbLevel,
+    QuoteHeader, TD10ReportBody, PubKey, TdxModule, TdxModuleIdentityTcbLevel,
     TdxModuleTcb
 };
 use core::starknet::secp256_trait::Signature;
@@ -53,7 +53,7 @@ fn test_verify_tdx() {
         s: 72674971023089189047068507351200803062440645804094665029593294585098605772891, 
         y_parity: false 
     };
-    let attestation_pubkey = AttestationPubKey { 
+    let attestation_pubkey = PubKey { 
         x: 26453215742624095465431109809211961106411777909052654475810087310567755410373, 
         y: 57984426202587454214512483120226050197502430206168337009185092847479047645354 
     };

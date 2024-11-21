@@ -1,4 +1,4 @@
-use dcap_cairo::types::{QuoteHeader, TD10ReportBody, AttestationPubKey, TdxModule};
+use dcap_cairo::types::{QuoteHeader, TD10ReportBody, PubKey, TdxModule};
 use core::starknet::secp256_trait::Signature;
 
 #[starknet::interface]
@@ -8,7 +8,7 @@ pub trait ITdxVerifier<TContractState> {
         quote_header: QuoteHeader,
         quote_body: TD10ReportBody,
         attestation_signature: Signature,
-        attestation_pubkey: AttestationPubKey,
+        attestation_pubkey: PubKey,
         tdx_module: TdxModule,
         tcb_info_svn: Span<u8>,
     ) -> bool;
@@ -16,7 +16,7 @@ pub trait ITdxVerifier<TContractState> {
 
 #[starknet::contract]
 mod TdxVerifier {
-    use super::{QuoteHeader, TD10ReportBody, Signature, TdxModule, AttestationPubKey};
+    use super::{QuoteHeader, TD10ReportBody, Signature, TdxModule, PubKey};
     use dcap_cairo::{verify_quote_signature, verify_tdx_module, verify_tdx_tcb};
 
     #[storage]
@@ -30,13 +30,13 @@ mod TdxVerifier {
             quote_header: QuoteHeader,
             quote_body: TD10ReportBody,
             attestation_signature: Signature,
-            attestation_pubkey: AttestationPubKey,
+            attestation_pubkey: PubKey,
             tdx_module: TdxModule,
             tcb_info_svn: Span<u8>,
         ) -> bool {
             // Verify quote signature
             if !verify_quote_signature(
-                @quote_header, @quote_body, @attestation_signature, attestation_pubkey,
+                @quote_header, @quote_body, @attestation_signature, @attestation_pubkey,
             ) {
                 return false;
             }
