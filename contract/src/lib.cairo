@@ -46,7 +46,7 @@ mod TdxVerifier {
                 return false;
             }
 
-            // Get TCB status from TDX module verification
+            // Verify TCB status from TDX module verification
             let tcb_status = verify_tdx_tcb(quote_body.tee_tcb_svn, @tdx_module);
             if tcb_status != 0 {
                 return false;
