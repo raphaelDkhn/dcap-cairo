@@ -5,11 +5,15 @@ use dcap_rs::types::{
 use ethnum::u256;
 
 use crate::types::{
-    AttestationPubKey, ContractInputs, QuoteHeader, Signature, TD10ReportBody, TdxModule,
-    TdxModuleIdentityTcbLevel, TdxModuleTcb,
+    ContractInputs, Dates, EnclaveIdentityV2, PubKey, QuoteHeader, Signature, TD10ReportBody,
+    TdxModule, TdxModuleIdentityTcbLevel, TdxModuleTcb,
 };
 
-pub fn prepare_cairo_inputs(quote: &QuoteV4, collaterals: &IntelCollateral) -> ContractInputs {
+pub fn prepare_cairo_inputs(
+    quote: &QuoteV4,
+    collaterals: &IntelCollateral,
+    current_time: u64,
+) -> ContractInputs {
     // Extract quote header
     let cairo_header = QuoteHeader {
         version: quote.header.version,
@@ -45,7 +49,7 @@ pub fn prepare_cairo_inputs(quote: &QuoteV4, collaterals: &IntelCollateral) -> C
     };
 
     // Extract ECDSA attestation signature
-    let signature = {
+    let attestation_signature = {
         let sig = &quote.signature.quote_signature;
         let (r_bytes, s_bytes) = sig.split_at(32);
 
@@ -62,7 +66,7 @@ pub fn prepare_cairo_inputs(quote: &QuoteV4, collaterals: &IntelCollateral) -> C
     };
 
     // Get ECDSA attestation public key
-    let pubkey = {
+    let attestation_pubkey = {
         let key = &quote.signature.ecdsa_attestation_key;
         // Split the 64 byte key into x and y coordinates (32 bytes each)
         let (x_bytes, y_bytes) = key.split_at(32);
@@ -70,7 +74,7 @@ pub fn prepare_cairo_inputs(quote: &QuoteV4, collaterals: &IntelCollateral) -> C
         let x = u256::from_be_bytes(x_bytes.try_into().unwrap());
         let y = u256::from_be_bytes(y_bytes.try_into().unwrap());
 
-        AttestationPubKey { x, y }
+        PubKey { x, y }
     };
 
     // Extract TDX module info from TCBInfo
@@ -143,13 +147,68 @@ pub fn prepare_cairo_inputs(quote: &QuoteV4, collaterals: &IntelCollateral) -> C
         panic!("No TCB levels found");
     };
 
+    // Get info for validating enclave identity
+    let qeidentityv2 = collaterals.get_qeidentityv2();
+    let issue_date_seconds =
+        chrono::DateTime::parse_from_rfc3339(&qeidentityv2.enclave_identity.issue_date)
+            .unwrap()
+            .timestamp() as u64;
+    let next_update_seconds =
+        chrono::DateTime::parse_from_rfc3339(&qeidentityv2.enclave_identity.next_update)
+            .unwrap()
+            .timestamp() as u64;
+    let dates = Dates {
+        current_time,
+        issue_date_seconds,
+        next_update_seconds,
+    };
+    // Extract ECDSA enclave identity signature
+    let enclave_identity_signature = {
+        // signature is a hex string, we'll convert it to bytes
+        // assume that the signature is a P256 ECDSA signature
+        let sig = hex::decode(&qeidentityv2.signature).unwrap();
+        let (r_bytes, s_bytes) = sig.split_at(32);
+
+        // Convert both parts of the signature
+        let r_u256 = u256::from_be_bytes(*try_into_array(r_bytes).unwrap());
+        let s_u256 = u256::from_be_bytes(*try_into_array(s_bytes).unwrap());
+
+        // Create the signature struct
+        Signature {
+            r: r_u256,
+            s: s_u256,
+            y_parity: false,
+        }
+    };
+    let enclave_identityv2_signature_data =
+        serde_json::to_vec(&qeidentityv2.enclave_identity).unwrap();
+    let enclave_identity = EnclaveIdentityV2 {
+        signature: enclave_identity_signature,
+        data: enclave_identityv2_signature_data,
+    };
+    // Get ECDSA enclave identity public key
+    let signing_cert = collaterals.get_sgx_tcb_signing();
+    let sgx_signing_pubkey = {
+        let key = signing_cert.public_key().subject_public_key.as_ref();
+        // Split the 64 byte key into x and y coordinates (32 bytes each)
+        let (x_bytes, y_bytes) = key[1..].split_at(32);
+        // Convert to big-endian representation for u256
+        let x = u256::from_be_bytes(x_bytes.try_into().unwrap());
+        let y = u256::from_be_bytes(y_bytes.try_into().unwrap());
+
+        PubKey { x, y }
+    };
+
     ContractInputs {
         quote_header: cairo_header,
         quote_body: td10_body,
-        attestation_signature: signature,
-        attestation_pubkey: pubkey,
+        attestation_signature,
+        attestation_pubkey,
         tdx_module,
         tcb_info_svn,
+        dates,
+        enclave_identity,
+        sgx_signing_pubkey,
     }
 }
 

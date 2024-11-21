@@ -1,6 +1,6 @@
 use crate::types::{
-    QuoteHeader, QuoteHeaderImpl, TdxModule, TD10ReportBody, TD10ReportBodyImpl, PubKey,
-    Dates
+    QuoteHeader, QuoteHeaderImpl, TdxModule, TD10ReportBody, TD10ReportBodyImpl, PubKey, Dates,
+    EnclaveIdentityV2
 };
 use crate::constants::{INTEL_QE_VENDOR_ID, ECDSA_256_WITH_P256_CURVE, TDX_TEE_TYPE};
 use alexandria_data_structures::span_ext::SpanTraitExt;
@@ -51,7 +51,6 @@ pub fn verify_quote_signature(
     let mut message = (*quote_header).to_bytes().concat((*quote_body).to_bytes());
 
     verify_p256_signature_bytes(message.span(), attestation_signature, attestation_pubkey)
-    
 }
 
 // Verify TDX module identity matches TCB info
@@ -103,13 +102,17 @@ pub fn verify_tdx_tcb(tee_tcb_svn: Span<u8>, tdx_module: @TdxModule) -> u8 {
     tcb_status
 }
 
-// pub fn validate_enclave_identity(dates: @Dates, enclave_identity: EnclaveIdentityV2) -> bool {
-//     // check that the current_time is between the issue_date and next_update_date
-//     if dates.current_time < dates.issue_date_seconds
-//         || dates.current_time > dates.next_update_seconds {
-//         return false;
-//     }
+pub fn validate_enclave_identity(
+    dates: @Dates, enclave_identity: @EnclaveIdentityV2, sgx_signing_pubkey: @PubKey
+) -> bool {
+    // check that the current_time is between the issue_date and next_update_date
+    if dates.current_time < dates.issue_date_seconds
+        || dates.current_time > dates.next_update_seconds {
+        return false;
+    }
 
-
-//     false
-// }
+    // verify that the enclave identity root is signed by the root cert
+    verify_p256_signature_bytes(
+        *enclave_identity.data, enclave_identity.signature, sgx_signing_pubkey
+    )
+}

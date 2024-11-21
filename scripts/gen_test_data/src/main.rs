@@ -5,6 +5,9 @@ use preprocess::parser::prepare_cairo_inputs;
 use std::fs::File;
 use std::io::Write;
 
+// September 10th, 2024, 6:49am GMT
+const PINNED_TIME: u64 = 1725950994;
+
 pub fn main() {
     // Load TDX quote from binary data file
     let quote = QuoteV4::from_bytes(include_bytes!("../data/quote_tdx_00806f050000.dat"));
@@ -22,7 +25,7 @@ pub fn main() {
     collaterals.set_sgx_processor_crl_der(include_bytes!("../data/pck_processor_crl.der"));
 
     // Prepare inputs for Cairo contract
-    let inputs = prepare_cairo_inputs(&quote, &collaterals);
+    let inputs = prepare_cairo_inputs(&quote, &collaterals, PINNED_TIME);
 
     // Generate Cairo code for constructor arguments
     let cairo_code = format!(
@@ -58,7 +61,7 @@ pub fn main() {
                 s: {}, 
                 y_parity: {} 
             }};
-            let attestation_pubkey = AttestationPubKey {{ 
+            let attestation_pubkey = PubKey {{ 
                 x: {}, 
                 y: {} 
             }};
@@ -66,11 +69,28 @@ pub fn main() {
                 mrsigner: [{}].span(),
                 attributes: {},
                 attributes_mask: {},
-                identity_id: {},
-                expected_id: {},
+                identity_id: '{}',
+                expected_id: '{}',
                 tcb_levels: {}
             }};
             let tcb_info_svn = [{}].span();
+            let dates = Dates {{
+                current_time: {},
+                issue_date_seconds: {},
+                next_update_seconds: {}
+            }};
+            let enclave_identity = EnclaveIdentityV2 {{
+                signature: Signature {{ 
+                    r: {}, 
+                    s: {}, 
+                    y_parity: {} 
+                }},
+                data: [{}].span()
+            }};
+            let sgx_signing_pubkey = PubKey {{
+                x: {},
+                y: {}
+            }};
         ",
         // Quote Header
         inputs.quote_header.version,
@@ -117,7 +137,17 @@ pub fn main() {
                 .join(", ")
         ),
         // TCB Info SVN
-        inputs.tcb_info_svn.iter().map(|b| b.to_string()).collect::<Vec<_>>().join(", ")
+        inputs.tcb_info_svn.iter().map(|b| b.to_string()).collect::<Vec<_>>().join(", "),
+        // Enclave Identity
+        inputs.dates.current_time,
+        inputs.dates.issue_date_seconds,
+        inputs.dates.next_update_seconds,
+        inputs.enclave_identity.signature.r,
+        inputs.enclave_identity.signature.s,
+        inputs.enclave_identity.signature.y_parity,
+        inputs.enclave_identity.data.iter().map(|b| b.to_string()).collect::<Vec<_>>().join(", "),
+        inputs.sgx_signing_pubkey.x,
+        inputs.sgx_signing_pubkey.y
     );
 
     let path = "test_data.txt";

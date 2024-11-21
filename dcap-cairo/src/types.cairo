@@ -1,4 +1,5 @@
 use crate::common::bytes::{U16BytesImpl, U32BytesImpl, U64BytesImpl};
+use starknet::secp256_trait::Signature;
 
 #[derive(Copy, Drop, Serde)]
 pub struct QuoteHeader {
@@ -104,6 +105,7 @@ pub struct TdxModuleTcb {
     pub isvsvn: u8
 }
 
+#[derive(Drop, Serde)]
 pub struct Dates {
     pub current_time: u64,
     pub issue_date_seconds: u64,
@@ -112,8 +114,8 @@ pub struct Dates {
 
 #[derive(Drop, Serde)]
 pub struct EnclaveIdentityV2 {
-    pub signature: Span<u8>, //  P256 ECDSA signature
-    pub data: [u32; 8] 
+    pub signature: Signature,
+    pub data: Span<u8>
 }
 
 #[derive(Drop, Serde)]

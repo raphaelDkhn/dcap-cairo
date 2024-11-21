@@ -55,9 +55,15 @@ pub struct TdxModuleTcb {
 }
 
 #[derive(Debug)]
-pub struct AttestationPubKey {
+pub struct PubKey {
     pub x: u256,
     pub y: u256,
+}
+
+pub struct Dates {
+    pub current_time: u64,
+    pub issue_date_seconds: u64,
+    pub next_update_seconds: u64,
 }
 
 /// Secp256r1 ECDSA signature.
@@ -71,7 +77,15 @@ pub struct ContractInputs {
     pub quote_header: QuoteHeader,
     pub quote_body: TD10ReportBody,
     pub attestation_signature: Signature,
-    pub attestation_pubkey: AttestationPubKey,
+    pub attestation_pubkey: PubKey,
     pub tdx_module: TdxModule,
     pub tcb_info_svn: Vec<u8>,
+    pub dates: Dates,
+    pub enclave_identity: EnclaveIdentityV2,
+    pub sgx_signing_pubkey: PubKey,
+}
+
+pub struct EnclaveIdentityV2 {
+    pub signature: Signature,
+    pub data: Vec<u8>,
 }
