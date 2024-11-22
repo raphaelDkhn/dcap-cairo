@@ -28,7 +28,6 @@ $ snforge test
 | Verify TDX module identity              | ✅     |
 | Verify TCB status                       | ✅     |
 | Verify certificate                      | ⏳     |
-| Verify certificate                      | ⏳     |
 | Verify QEReport                         | ⏳     |
 | Verify certificate chain                | ⏳     |
 | Verify the signature for qe report data | ⏳     |
